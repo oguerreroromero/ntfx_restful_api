@@ -22,8 +22,9 @@ export class MovieController {
   listAllMovies(
     @Query('limit') limit: number,
     @Query('page') page: number,
+    @Query('query') query?: string,
   ): Promise<object[]> {
-    return this.movieService.listAllMovies(limit, page);
+    return this.movieService.listAllMovies(query, limit, page);
   }
 
   @Get(':id')

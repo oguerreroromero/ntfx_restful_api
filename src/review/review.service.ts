@@ -31,19 +31,19 @@ export class ReviewService {
     return rsp;
   }
 
-/**
+  /**
    * Actualiza el promedio de calificación de cada película
-   * 
+   *
    * async function (params(1)) return []
-   * 
+   *
    * @param   idMovie : string - Es el _id en formato string de la película. Se hará
    *                            la conversión a tipo ObjectId para hacer la búsqueda.
-   * 
-   * @returns []      : array  - Es el resultado del comando. El pipeline actualiza 
+   *
+   * @returns []      : array  - Es el resultado del comando. El pipeline actualiza
    *                            directamente la base de datos mediante $merge, por lo
    *                            cual no hay retorno.
-   * 
-*/
+   *
+   */
 
   async setScore(idMovie: string) {
     const objectIDParam = new ObjectId(idMovie);

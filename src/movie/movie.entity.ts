@@ -41,6 +41,7 @@ export class Movie {
   updatedAt: Date;
 
   @BeforeInsert()
+  @BeforeUpdate()
   async parseObjectId() {
     if (!this.platforms) {
       this.platforms = [];

@@ -22,8 +22,8 @@ export class MovieService {
     private readonly dbService: DbService,
   ) {}
 
-  async listAllMovies(limit?: number, page?: number) {
-    let _page: number = 1;
+  async listAllMovies(query?: string, limit?: number, page?: number) {
+    let _page: number = 0;
     let _limit: number = 50;
     let _skip: number = 0;
     if (page && page > 0) {
@@ -34,103 +34,30 @@ export class MovieService {
       _limit = Number(limit);
     }
 
-    _skip = (_page - 1) * _limit;
+    _skip = (_page - 1 < 0 ? 0 : _page - 1) * _limit;
 
-    const movies = await this.moviesRepository.find({
-      skip: _skip,
-      take: _limit,
-    });
+    const customPipeline = await this.dbService.getPipelineFindAllMovies(
+      query,
+      _skip,
+      _limit,
+    );
 
-    const moviesRsp = movies.map((movie) => ({
-      id : movie._id,//para efectos de las pruebas
-      title: movie.title,
-      director: movie.director,
-      score: movie.score,
-      slug: movie.slug,
-      image: movie.image,
-    }));
+    const reviewsData = await this.dbService.cAggregate(
+      'movies',
+      customPipeline,
+    );
 
-    return moviesRsp;
+    return reviewsData;
   }
 
- 
-
   async getById(id: string) {
-    const objectIDParam = new ObjectId(id);
+    const customPipeline = await this.dbService.getPipelineFindOneMovie(id);
+    const reviewDetail = await this.dbService.cAggregate(
+      'movies',
+      customPipeline,
+    );
 
-    const movieDetail = await this.moviesRepository.findOne({
-      where: {
-        _id: objectIDParam,
-      },
-    });
-
-    if (!movieDetail) {
-      throw new NotFoundException('Película no encontrada.');
-    }
-
-    const rspMovie = {
-      id : movieDetail._id,//para hacer las pruebas
-      title: movieDetail.title,
-      director: movieDetail.director,
-      score: movieDetail.score,
-      slug: movieDetail.slug,
-      image: movieDetail.image,
-      reviews: {},
-    };
-
-    const reviewsData = await this.dbService.cAggregate('reviews', [
-      {
-        $match: {
-          movie_id: objectIDParam,
-        },
-      },
-      {
-        $lookup: {
-          from: 'platforms',
-          localField: 'platform_id',
-          foreignField: '_id',
-          as: 'platform',
-        },
-      },
-      {
-        $unwind: '$platform',
-      },
-      {
-        $group: {
-          _id: '$platform.name',
-          reviews: {
-            $push: {
-              author: '$author',
-              body: '$body',
-              score: '$score',
-            },
-          },
-        },
-      },
-      {
-        $project: {
-          review: {
-            k: '$_id',
-            v: '$reviews',
-          },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          cv: { $push: '$review' },
-        },
-      },
-      {
-        $replaceRoot: {
-          newRoot: { $arrayToObject: '$cv' },
-        },
-      },
-    ]);
-
-    rspMovie.reviews = reviewsData[0] || {};
-
-    return rspMovie;
+    return reviewDetail;
   }
 
   async createMovie(createMovieObj: CreateMovieDto) {
